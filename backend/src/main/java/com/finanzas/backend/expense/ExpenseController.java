@@ -1,10 +1,7 @@
 package com.finanzas.backend.expense;
 
-import com.finanzas.backend.category.Category;
 import com.finanzas.backend.expense.dto.CreateExpenseRequest;
 import com.finanzas.backend.expense.dto.ExpenseResponse;
-import com.finanzas.backend.group.Group;
-import com.finanzas.backend.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,35 +15,12 @@ import java.util.List;
 public class ExpenseController {
 
     private final ExpenseService expenseService;
-    private final UserService userService;
 
     @PostMapping
     public ResponseEntity<ExpenseResponse> create(
             @RequestBody CreateExpenseRequest request,
             @RequestHeader("X-User-Id") Long userId) {
-
-        Expense expense = new Expense();
-        expense.setDescription(request.getDescription());
-        expense.setAmount(request.getAmount());
-        expense.setCurrency(request.getCurrency());
-        expense.setSplitType(request.getSplitType());
-        expense.setDate(request.getDate());
-        expense.setNotes(request.getNotes());
-        expense.setReceiptUrl(request.getReceiptUrl());
-        expense.setPaidBy(userService.getById(userId));
-
-        if (request.getGroupId() != null) {
-            Group group = new Group();
-            group.setId(request.getGroupId());
-            expense.setGroup(group);
-        }
-        if (request.getCategoryId() != null) {
-            Category category = new Category();
-            category.setId(request.getCategoryId());
-            expense.setCategory(category);
-        }
-
-        Expense saved = expenseService.createExpense(expense, request.getParticipantIds(), request.getCustomValues());
+        Expense saved = expenseService.createFromRequest(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(ExpenseResponse.from(saved));
     }
 

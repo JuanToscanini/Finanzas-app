@@ -1,5 +1,8 @@
 package com.finanzas.backend.expense;
 
+import com.finanzas.backend.category.CategoryRepository;
+import com.finanzas.backend.expense.dto.CreateExpenseRequest;
+import com.finanzas.backend.group.GroupRepository;
 import com.finanzas.backend.split.Split;
 import com.finanzas.backend.user.User;
 import com.finanzas.backend.user.UserService;
@@ -19,10 +22,29 @@ public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
     private final UserService userService;
+    private final GroupRepository groupRepository;
+    private final CategoryRepository categoryRepository;
 
     @Transactional
-    public Expense createExpense(Expense expense, List<Long> participantIds, Map<Long, BigDecimal> customValues) {
-        List<Split> splits = buildSplits(expense, participantIds, customValues);
+    public Expense createFromRequest(CreateExpenseRequest request, Long userId) {
+        Expense expense = new Expense();
+        expense.setDescription(request.getDescription());
+        expense.setAmount(request.getAmount());
+        expense.setCurrency(request.getCurrency());
+        expense.setSplitType(request.getSplitType());
+        expense.setDate(request.getDate());
+        expense.setNotes(request.getNotes());
+        expense.setReceiptUrl(request.getReceiptUrl());
+        expense.setPaidBy(userService.getById(userId));
+
+        if (request.getGroupId() != null) {
+            expense.setGroup(groupRepository.getReferenceById(request.getGroupId()));
+        }
+        if (request.getCategoryId() != null) {
+            expense.setCategory(categoryRepository.getReferenceById(request.getCategoryId()));
+        }
+
+        List<Split> splits = buildSplits(expense, request.getParticipantIds(), request.getCustomValues());
         expense.setSplits(splits);
         return expenseRepository.save(expense);
     }
