@@ -45,4 +45,17 @@ public class UserService {
         user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);
     }
+
+    public User updateProfile(Long id, String username, String avatarUrl, String preferredCurrency) {
+        User user = getById(id);
+        if (username != null && !username.isBlank()) {
+            if (!username.equals(user.getUsername()) && existsByUsername(username)) {
+                throw new RuntimeException("El username ya está en uso");
+            }
+            user.setUsername(username);
+        }
+        if (avatarUrl != null) user.setAvatarUrl(avatarUrl);
+        if (preferredCurrency != null && !preferredCurrency.isBlank()) user.setPreferredCurrency(preferredCurrency);
+        return userRepository.save(user);
+    }
 }
