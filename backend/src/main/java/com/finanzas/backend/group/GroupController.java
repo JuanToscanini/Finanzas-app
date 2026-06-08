@@ -30,6 +30,15 @@ public class GroupController {
         return ResponseEntity.ok(GroupResponse.from(groupService.getById(id)));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<GroupResponse> update(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateGroupRequest request,
+            @RequestHeader("X-User-Id") Long userId) {
+        Group group = groupService.updateGroup(id, userId, request.getName());
+        return ResponseEntity.ok(GroupResponse.from(group));
+    }
+
     @GetMapping
     public ResponseEntity<List<GroupResponse>> getMyGroups(@RequestHeader("X-User-Id") Long userId) {
         List<GroupResponse> groups = groupService.getGroupsForUser(userId)

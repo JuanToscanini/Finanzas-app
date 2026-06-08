@@ -60,6 +60,15 @@ public class GroupService {
         return groupRepository.save(group);
     }
 
+    @Transactional
+    public Group updateGroup(Long groupId, Long userId, String newName) {
+        Group group = getById(groupId);
+        validateMember(group, userId);
+
+        group.setName(newName);
+        return groupRepository.save(group);
+    }
+
     public Group getById(Long groupId) {
         return groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Grupo no encontrado: " + groupId));
