@@ -1,7 +1,10 @@
 package com.finanzas.backend.split;
 
+import com.finanzas.backend.split.dto.CreateSplitRequest;
 import com.finanzas.backend.split.dto.SplitResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +16,17 @@ import java.util.List;
 public class SplitController {
 
     private final SplitService splitService;
+
+    @PostMapping
+    public ResponseEntity<SplitResponse> create(@Valid @RequestBody CreateSplitRequest request) {
+        Split split = splitService.create(
+                request.getExpenseId(),
+                request.getUserId(),
+                request.getAmount(),
+                request.getPercentage()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(SplitResponse.from(split));
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<SplitResponse> getById(@PathVariable Long id) {

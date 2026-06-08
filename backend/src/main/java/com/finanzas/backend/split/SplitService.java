@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -17,6 +18,20 @@ public class SplitService {
     private final SplitRepository splitRepository;
     private final ExpenseService expenseService;
     private final UserService userService;
+
+    public Split create(Long expenseId, Long userId, BigDecimal amount, BigDecimal percentage) {
+        Expense expense = expenseService.getById(expenseId);
+        User user = userService.getById(userId);
+
+        Split split = new Split();
+        split.setExpense(expense);
+        split.setUser(user);
+        split.setAmount(amount);
+        split.setPercentage(percentage);
+        split.setIsSettled(false);
+
+        return splitRepository.save(split);
+    }
 
     public Split getById(Long splitId) {
         return splitRepository.findById(splitId)
