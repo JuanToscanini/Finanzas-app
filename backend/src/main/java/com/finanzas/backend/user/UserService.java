@@ -1,5 +1,7 @@
 package com.finanzas.backend.user;
 
+import com.finanzas.backend.common.exception.DuplicateResourceException;
+import com.finanzas.backend.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +24,7 @@ public class UserService {
 
     public User getById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + id));
     }
 
     public Optional<User> findByEmail(String email) {
@@ -50,7 +52,7 @@ public class UserService {
         User user = getById(id);
         if (username != null && !username.isBlank()) {
             if (!username.equals(user.getUsername()) && existsByUsername(username)) {
-                throw new RuntimeException("El username ya está en uso");
+                throw new DuplicateResourceException("El username ya está en uso");
             }
             user.setUsername(username);
         }
