@@ -2,6 +2,7 @@ package com.finanzas.backend.group;
 
 import com.finanzas.backend.group.dto.CreateGroupRequest;
 import com.finanzas.backend.group.dto.GroupResponse;
+import com.finanzas.backend.group.dto.UpdateGroupRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

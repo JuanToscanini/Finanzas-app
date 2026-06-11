@@ -1,0 +1,5 @@
+ALTER TABLE expenses ADD COLUMN currency VARCHAR(3) DEFAULT 'ARS';
+ALTER TABLE expenses ADD COLUMN notes TEXT;
+ALTER TABLE expenses ADD COLUMN receipt_url VARCHAR(255);
+ALTER TABLE expenses RENAME COLUMN paid_by_user_id TO paid_by;
+ALTER TABLE expenses ALTER COLUMN amount TYPE NUMERIC(12,2);
