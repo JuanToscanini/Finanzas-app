@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+/* Paleta personalizada — disponible como bg-accent-orange, text-accent-blue, etc. */
+@theme {
+  --color-accent-orange:       #FF7A45;
+  --color-accent-orange-light: #FF9466;
+  --color-accent-blue:         #5DA9E9;
+  --color-bg-from:             #0F1B2D;
+  --color-bg-to:               #1E3A5F;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Clases utilitarias reutilizables */
+@layer utilities {
+  /* Fondo degradado global */
+  .bg-app {
+    background: linear-gradient(135deg, #0F1B2D 0%, #1E3A5F 100%);
+    min-height: 100vh;
+  }
+
+  /* Tarjeta glassmorphism */
+  .card-glass {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+  }
+
+  /* Variante más opaca para modales */
+  .card-glass-strong {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+  }
+}
+
+html,
+body {
+  height: 100%;
+  color: #ffffff;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
