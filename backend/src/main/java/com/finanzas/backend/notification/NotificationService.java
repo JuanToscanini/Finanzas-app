@@ -1,5 +1,7 @@
 package com.finanzas.backend.notification;
 
+import com.finanzas.backend.common.exception.ResourceNotFoundException;
+import com.finanzas.backend.common.exception.UnauthorizedException;
 import com.finanzas.backend.user.User;
 import com.finanzas.backend.user.UserService;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +34,7 @@ public class NotificationService {
 
     public Notification getById(Long notificationId) {
         return notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new RuntimeException("Notificación no encontrada: " + notificationId));
+                .orElseThrow(() -> new ResourceNotFoundException("Notificación no encontrada: " + notificationId));
     }
 
     public List<Notification> getByUser(Long userId) {
@@ -55,7 +57,7 @@ public class NotificationService {
         Notification notification = getById(notificationId);
 
         if (!notification.getUser().getId().equals(userId)) {
-            throw new RuntimeException("No tenés permiso para modificar esta notificación");
+            throw new UnauthorizedException("No tenés permiso para modificar esta notificación");
         }
 
         notification.setIsRead(true);

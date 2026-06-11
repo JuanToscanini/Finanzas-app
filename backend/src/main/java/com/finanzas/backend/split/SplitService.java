@@ -1,5 +1,6 @@
 package com.finanzas.backend.split;
 
+import com.finanzas.backend.common.exception.ResourceNotFoundException;
 import com.finanzas.backend.expense.Expense;
 import com.finanzas.backend.expense.ExpenseService;
 import com.finanzas.backend.user.User;
@@ -35,7 +36,7 @@ public class SplitService {
 
     public Split getById(Long splitId) {
         return splitRepository.findById(splitId)
-                .orElseThrow(() -> new RuntimeException("Split no encontrado: " + splitId));
+                .orElseThrow(() -> new ResourceNotFoundException("Split no encontrado: " + splitId));
     }
 
     public List<Split> getByExpense(Long expenseId) {
