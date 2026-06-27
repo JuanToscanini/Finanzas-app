@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import api from '../lib/api'
+import api from '../../lib/api'
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter()
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -15,13 +16,13 @@ export default function LoginPage() {
     setLoading(true)
     setErrorMsg('')
     try {
-      const response = await api.post('/api/auth/login', { email, password })
+      const response = await api.post('/api/auth/register', { username, email, password })
       localStorage.setItem('token', response.data.token)
       localStorage.setItem('userId', String(response.data.userId))
       localStorage.setItem('username', response.data.username)
       router.push('/dashboard')
     } catch {
-      setErrorMsg('Email o contraseña incorrectos')
+      setErrorMsg('Error al registrarse. Intentá con otro email.')
     } finally {
       setLoading(false)
     }
@@ -38,11 +39,18 @@ export default function LoginPage() {
             <span className="text-accent-orange">Finanzas</span>
             <span className="text-white"> App</span>
           </h1>
-          <p className="text-white/50 text-sm">Iniciar sesión</p>
+          <p className="text-white/50 text-sm">Crear cuenta</p>
         </div>
 
         {/* Inputs */}
         <div className="flex flex-col gap-3">
+          <input
+            type="text"
+            placeholder="Usuario"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-white/40 text-sm outline-none focus:border-accent-orange transition-colors"
+          />
           <input
             type="email"
             placeholder="Email"
@@ -69,18 +77,18 @@ export default function LoginPage() {
                 : 'hover:bg-accent-orange-light cursor-pointer'
             }`}
           >
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? 'Registrando...' : 'Registrarse'}
           </div>
           {errorMsg && (
             <p className="text-red-400 text-sm text-center mt-2">{errorMsg}</p>
           )}
           <p className="text-center text-sm text-white/40">
-            ¿No tenés cuenta?{' '}
+            ¿Ya tenés cuenta?{' '}
             <span
-              onClick={() => router.push('/register')}
+              onClick={() => router.push('/')}
               className="text-accent-blue cursor-pointer hover:underline"
             >
-              Registrate
+              Iniciá sesión
             </span>
           </p>
         </div>
