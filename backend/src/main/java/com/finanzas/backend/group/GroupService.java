@@ -1,5 +1,9 @@
 package com.finanzas.backend.group;
 
+import com.finanzas.backend.common.exception.DuplicateResourceException;
+import com.finanzas.backend.common.exception.ResourceNotFoundException;
+import com.finanzas.backend.common.exception.UnauthorizedException;
+import com.finanzas.backend.common.exception.ValidationException;
 import com.finanzas.backend.user.User;
 import com.finanzas.backend.user.UserService;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +40,7 @@ public class GroupService {
 
         User member = userService.getById(memberId);
         if (group.getMembers().stream().anyMatch(u -> u.getId().equals(memberId))) {
-            throw new RuntimeException("El usuario ya es miembro del grupo");
+            throw new DuplicateResourceException("El usuario ya es miembro del grupo");
         }
 
         group.getMembers().add(member);
@@ -49,20 +53,29 @@ public class GroupService {
         validateMember(group, userId);
 
         if (group.getCreatedBy().getId().equals(memberId)) {
-            throw new RuntimeException("No podés eliminar al creador del grupo");
+            throw new ValidationException("No podés eliminar al creador del grupo");
         }
 
         boolean removed = group.getMembers().removeIf(u -> u.getId().equals(memberId));
         if (!removed) {
-            throw new RuntimeException("El usuario no es miembro del grupo");
+            throw new ResourceNotFoundException("El usuario no es miembro del grupo");
         }
 
         return groupRepository.save(group);
     }
 
+    @Transactional
+    public Group updateGroup(Long groupId, Long userId, String newName) {
+        Group group = getById(groupId);
+        validateMember(group, userId);
+
+        group.setName(newName);
+        return groupRepository.save(group);
+    }
+
     public Group getById(Long groupId) {
         return groupRepository.findById(groupId)
-                .orElseThrow(() -> new RuntimeException("Grupo no encontrado: " + groupId));
+                .orElseThrow(() -> new ResourceNotFoundException("Grupo no encontrado: " + groupId));
     }
 
     public List<Group> getGroupsForUser(Long userId) {
@@ -75,7 +88,7 @@ public class GroupService {
         Group group = getById(groupId);
 
         if (!group.getCreatedBy().getId().equals(userId)) {
-            throw new RuntimeException("Solo el creador puede desactivar el grupo");
+            throw new UnauthorizedException("Solo el creador puede desactivar el grupo");
         }
 
         group.setIsActive(false);
@@ -86,7 +99,7 @@ public class GroupService {
         boolean isMember = group.getMembers().stream()
                 .anyMatch(u -> u.getId().equals(userId));
         if (!isMember) {
-            throw new RuntimeException("No sos miembro de este grupo");
+            throw new UnauthorizedException("No sos miembro de este grupo");
         }
     }
 }

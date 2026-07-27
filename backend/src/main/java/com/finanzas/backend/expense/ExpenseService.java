@@ -1,6 +1,8 @@
 package com.finanzas.backend.expense;
 
 import com.finanzas.backend.category.CategoryRepository;
+import com.finanzas.backend.common.exception.ResourceNotFoundException;
+import com.finanzas.backend.common.exception.UnauthorizedException;
 import com.finanzas.backend.expense.dto.CreateExpenseRequest;
 import com.finanzas.backend.group.GroupRepository;
 import com.finanzas.backend.split.Split;
@@ -51,7 +53,7 @@ public class ExpenseService {
 
     public Expense getById(Long id) {
         return expenseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Gasto no encontrado: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Gasto no encontrado: " + id));
     }
 
     public List<Expense> getByPaidBy(Long userId) {
@@ -64,7 +66,7 @@ public class ExpenseService {
         Expense expense = getById(expenseId);
 
         if (!expense.getPaidBy().getId().equals(userId)) {
-            throw new RuntimeException("Solo quien pagó puede eliminar el gasto");
+            throw new UnauthorizedException("Solo quien pagó puede eliminar el gasto");
         }
 
         expenseRepository.delete(expense);

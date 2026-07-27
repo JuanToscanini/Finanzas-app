@@ -3,6 +3,9 @@ package com.finanzas.backend.category;
 import com.finanzas.backend.category.dto.CategoryResponse;
 import com.finanzas.backend.category.dto.CreateCategoryRequest;
 import com.finanzas.backend.category.dto.UpdateCategoryRequest;
+import com.finanzas.backend.common.exception.DuplicateResourceException;
+import com.finanzas.backend.common.exception.ResourceNotFoundException;
+import com.finanzas.backend.common.exception.UnauthorizedException;
 import com.finanzas.backend.user.User;
 import com.finanzas.backend.user.UserService;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +25,7 @@ public class CategoryService {
         User user = userService.getById(userId);
 
         if (categoryRepository.existsByNameAndCreatedBy(request.getName(), user)) {
-            throw new RuntimeException("Ya existe una categoría con ese nombre");
+            throw new DuplicateResourceException("Ya existe una categoría con ese nombre");
         }
 
         Category category = new Category();
@@ -43,7 +46,7 @@ public class CategoryService {
             User owner = category.getCreatedBy();
             if (!request.getName().equals(category.getName()) &&
                 categoryRepository.existsByNameAndCreatedBy(request.getName(), owner)) {
-                throw new RuntimeException("Ya existe una categoría con ese nombre");
+                throw new DuplicateResourceException("Ya existe una categoría con ese nombre");
             }
             category.setName(request.getName());
         }
@@ -79,15 +82,15 @@ public class CategoryService {
 
     public Category getEntityById(Long categoryId) {
         return categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada: " + categoryId));
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada: " + categoryId));
     }
 
     private void validateOwnership(Category category, Long userId) {
         if (Boolean.TRUE.equals(category.getIsDefault())) {
-            throw new RuntimeException("No podés modificar una categoría del sistema");
+            throw new UnauthorizedException("No podés modificar una categoría del sistema");
         }
         if (category.getCreatedBy() == null || !category.getCreatedBy().getId().equals(userId)) {
-            throw new RuntimeException("No tenés permiso para modificar esta categoría");
+            throw new UnauthorizedException("No tenés permiso para modificar esta categoría");
         }
     }
 }

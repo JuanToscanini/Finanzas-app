@@ -1,5 +1,8 @@
 package com.finanzas.backend.user;
 
+import com.finanzas.backend.common.exception.DuplicateResourceException;
+import com.finanzas.backend.common.exception.ResourceNotFoundException;
+import com.finanzas.backend.common.exception.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +21,7 @@ public class FriendshipService {
 
         if (friendshipRepository.existsByRequesterAndAddressee(requester, addressee) ||
             friendshipRepository.existsByRequesterAndAddressee(addressee, requester)) {
-            throw new RuntimeException("Ya existe una relación entre estos usuarios");
+            throw new DuplicateResourceException("Ya existe una relación entre estos usuarios");
         }
 
         Friendship friendship = new Friendship();
@@ -32,7 +35,7 @@ public class FriendshipService {
         Friendship friendship = getById(friendshipId);
 
         if (!friendship.getAddressee().getId().equals(userId)) {
-            throw new RuntimeException("Solo el destinatario puede aceptar la solicitud");
+            throw new UnauthorizedException("Solo el destinatario puede aceptar la solicitud");
         }
 
         friendship.setStatus(Friendship.Status.ACCEPTED);
@@ -43,7 +46,7 @@ public class FriendshipService {
         Friendship friendship = getById(friendshipId);
 
         if (!friendship.getAddressee().getId().equals(userId)) {
-            throw new RuntimeException("Solo el destinatario puede rechazar la solicitud");
+            throw new UnauthorizedException("Solo el destinatario puede rechazar la solicitud");
         }
 
         friendshipRepository.delete(friendship);
@@ -54,7 +57,7 @@ public class FriendshipService {
 
         if (!friendship.getRequester().getId().equals(userId) &&
             !friendship.getAddressee().getId().equals(userId)) {
-            throw new RuntimeException("No podés bloquear una amistad que no te pertenece");
+            throw new UnauthorizedException("No podés bloquear una amistad que no te pertenece");
         }
 
         friendship.setStatus(Friendship.Status.BLOCKED);
@@ -78,6 +81,6 @@ public class FriendshipService {
 
     private Friendship getById(Long id) {
         return friendshipRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Solicitud de amistad no encontrada: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Solicitud de amistad no encontrada: " + id));
     }
 }

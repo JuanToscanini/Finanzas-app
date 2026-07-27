@@ -1,5 +1,8 @@
 package com.finanzas.backend.settlement;
 
+import com.finanzas.backend.common.exception.ResourceNotFoundException;
+import com.finanzas.backend.common.exception.UnauthorizedException;
+import com.finanzas.backend.common.exception.ValidationException;
 import com.finanzas.backend.group.Group;
 import com.finanzas.backend.group.GroupService;
 import com.finanzas.backend.user.User;
@@ -24,10 +27,10 @@ public class SettlementService {
     public Settlement createSettlement(Long groupId, Long paidById, Long paidToId,
                                        BigDecimal amount, String currency, String notes) {
         if (paidById.equals(paidToId)) {
-            throw new RuntimeException("No podés registrar un pago a vos mismo");
+            throw new ValidationException("No podés registrar un pago a vos mismo");
         }
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("El monto debe ser mayor a cero");
+            throw new ValidationException("El monto debe ser mayor a cero");
         }
 
         Group group = groupService.getById(groupId);
@@ -54,10 +57,10 @@ public class SettlementService {
         Settlement settlement = getById(settlementId);
 
         if (!settlement.getPaidTo().getId().equals(userId)) {
-            throw new RuntimeException("Solo quien recibe el pago puede confirmarlo");
+            throw new UnauthorizedException("Solo quien recibe el pago puede confirmarlo");
         }
         if (settlement.getStatus() != Settlement.Status.PENDING) {
-            throw new RuntimeException("Este settlement ya fue procesado");
+            throw new ValidationException("Este settlement ya fue procesado");
         }
 
         settlement.setStatus(Settlement.Status.CONFIRMED);
@@ -70,10 +73,10 @@ public class SettlementService {
         Settlement settlement = getById(settlementId);
 
         if (!settlement.getPaidTo().getId().equals(userId)) {
-            throw new RuntimeException("Solo quien recibe el pago puede rechazarlo");
+            throw new UnauthorizedException("Solo quien recibe el pago puede rechazarlo");
         }
         if (settlement.getStatus() != Settlement.Status.PENDING) {
-            throw new RuntimeException("Este settlement ya fue procesado");
+            throw new ValidationException("Este settlement ya fue procesado");
         }
 
         settlement.setStatus(Settlement.Status.REJECTED);
@@ -82,7 +85,7 @@ public class SettlementService {
 
     public Settlement getById(Long settlementId) {
         return settlementRepository.findById(settlementId)
-                .orElseThrow(() -> new RuntimeException("Settlement no encontrado: " + settlementId));
+                .orElseThrow(() -> new ResourceNotFoundException("Settlement no encontrado: " + settlementId));
     }
 
     public List<Settlement> getByGroup(Long groupId) {
@@ -99,7 +102,7 @@ public class SettlementService {
         boolean isMember = group.getMembers().stream()
                 .anyMatch(u -> u.getId().equals(userId));
         if (!isMember) {
-            throw new RuntimeException("El usuario no es miembro del grupo");
+            throw new UnauthorizedException("El usuario no es miembro del grupo");
         }
     }
 }
