@@ -1,5 +1,7 @@
 package com.finanzas.backend.group;
 
+import com.finanzas.backend.balance.BalanceService;
+import com.finanzas.backend.balance.dto.GroupBalanceResponse;
 import com.finanzas.backend.group.dto.CreateGroupRequest;
 import com.finanzas.backend.group.dto.GroupResponse;
 import com.finanzas.backend.group.dto.UpdateGroupRequest;
@@ -17,6 +19,7 @@ import java.util.List;
 public class GroupController {
 
     private final GroupService groupService;
+    private final BalanceService balanceService;
 
     @PostMapping
     public ResponseEntity<GroupResponse> create(
@@ -63,6 +66,13 @@ public class GroupController {
             @RequestHeader("X-User-Id") Long userId) {
         Group group = groupService.removeMember(id, userId, memberId);
         return ResponseEntity.ok(GroupResponse.from(group));
+    }
+
+    @GetMapping("/{id}/balance")
+    public ResponseEntity<GroupBalanceResponse> getBalance(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Id") Long userId) {
+        return ResponseEntity.ok(balanceService.calculateGroupBalance(id, userId));
     }
 
     @DeleteMapping("/{id}")

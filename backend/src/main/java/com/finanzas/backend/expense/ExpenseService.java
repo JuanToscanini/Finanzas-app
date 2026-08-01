@@ -4,6 +4,7 @@ import com.finanzas.backend.category.CategoryRepository;
 import com.finanzas.backend.common.exception.ResourceNotFoundException;
 import com.finanzas.backend.common.exception.UnauthorizedException;
 import com.finanzas.backend.expense.dto.CreateExpenseRequest;
+import com.finanzas.backend.group.Group;
 import com.finanzas.backend.group.GroupRepository;
 import com.finanzas.backend.split.Split;
 import com.finanzas.backend.user.User;
@@ -37,11 +38,20 @@ public class ExpenseService {
         expense.setDate(request.getDate());
         expense.setNotes(request.getNotes());
         expense.setReceiptUrl(request.getReceiptUrl());
-        expense.setPaidBy(userService.getById(userId));
 
+        Group group = null;
         if (request.getGroupId() != null) {
-            expense.setGroup(groupRepository.getReferenceById(request.getGroupId()));
+            group = groupRepository.findById(request.getGroupId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Grupo no encontrado: " + request.getGroupId()));
+            expense.setGroup(group);
         }
+
+        Long payerId = request.getPaidById() != null ? request.getPaidById() : userId;
+        if (group != null) {
+            validateGroupMember(group, payerId);
+        }
+        expense.setPaidBy(userService.getById(payerId));
+
         if (request.getCategoryId() != null) {
             expense.setCategory(categoryRepository.getReferenceById(request.getCategoryId()));
         }
@@ -49,6 +59,14 @@ public class ExpenseService {
         List<Split> splits = buildSplits(expense, request.getParticipantIds(), request.getCustomValues());
         expense.setSplits(splits);
         return expenseRepository.save(expense);
+    }
+
+    private void validateGroupMember(Group group, Long userId) {
+        boolean isMember = group.getMembers().stream()
+                .anyMatch(u -> u.getId().equals(userId));
+        if (!isMember) {
+            throw new UnauthorizedException("El pagador elegido no es miembro del grupo");
+        }
     }
 
     public Expense getById(Long id) {

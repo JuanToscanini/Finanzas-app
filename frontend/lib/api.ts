@@ -5,12 +5,16 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Agrega el JWT en cada request
+// Agrega el JWT y el id del usuario autenticado en cada request
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+    }
+    const userId = localStorage.getItem('userId')
+    if (userId) {
+      config.headers['X-User-Id'] = userId
     }
   }
   return config
