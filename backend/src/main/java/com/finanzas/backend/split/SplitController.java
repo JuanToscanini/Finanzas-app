@@ -1,6 +1,8 @@
 package com.finanzas.backend.split;
 
+import com.finanzas.backend.split.dto.CategoryExpenseResponse;
 import com.finanzas.backend.split.dto.CreateSplitRequest;
+import com.finanzas.backend.split.dto.MonthlyExpenseResponse;
 import com.finanzas.backend.split.dto.SplitResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -57,5 +59,17 @@ public class SplitController {
     @PutMapping("/{id}/settled")
     public ResponseEntity<SplitResponse> markAsSettled(@PathVariable Long id) {
         return ResponseEntity.ok(SplitResponse.from(splitService.markAsSettled(id)));
+    }
+
+    @GetMapping("/user/{userId}/stats/by-category")
+    public ResponseEntity<List<CategoryExpenseResponse>> getStatsByCategory(@PathVariable Long userId) {
+        return ResponseEntity.ok(splitService.getExpensesByCategory(userId));
+    }
+
+    @GetMapping("/user/{userId}/stats/by-month")
+    public ResponseEntity<List<MonthlyExpenseResponse>> getStatsByMonth(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "6") int months) {
+        return ResponseEntity.ok(splitService.getMonthlyExpenses(userId, months));
     }
 }

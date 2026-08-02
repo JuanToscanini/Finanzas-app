@@ -3,6 +3,7 @@ package com.finanzas.backend.user;
 import com.finanzas.backend.common.exception.DuplicateResourceException;
 import com.finanzas.backend.common.exception.ResourceNotFoundException;
 import com.finanzas.backend.common.exception.UnauthorizedException;
+import com.finanzas.backend.common.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,10 @@ public class FriendshipService {
     private final UserService userService;
 
     public Friendship sendFriendRequest(Long requesterId, Long addresseeId) {
+        if (requesterId.equals(addresseeId)) {
+            throw new ValidationException("No podés enviarte una solicitud de amistad a vos mismo");
+        }
+
         User requester = userService.getById(requesterId);
         User addressee = userService.getById(addresseeId);
 

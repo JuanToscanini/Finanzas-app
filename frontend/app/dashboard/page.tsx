@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
+import CategoryDoughnutChart, { CategoryStat } from './CategoryDoughnutChart'
+import MonthlyBarChart, { MonthlyStat } from './MonthlyBarChart'
 
 interface UserResponse {
   id: number
@@ -30,6 +32,8 @@ export default function DashboardPage() {
   const [user, setUser] = useState<UserResponse | null>(null)
   const [splits, setSplits] = useState<SplitResponse[]>([])
   const [expenses, setExpenses] = useState<ExpenseResponse[]>([])
+  const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([])
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStat[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -43,15 +47,19 @@ export default function DashboardPage() {
 
     const fetchAll = async () => {
       try {
-        const [userRes, splitsRes, expensesRes] = await Promise.allSettled([
+        const [userRes, splitsRes, expensesRes, categoryStatsRes, monthlyStatsRes] = await Promise.allSettled([
           api.get('/api/users/me'),
           api.get(`/api/splits/user/${userId}/unsettled`),
           api.get(`/api/expenses/user/${userId}`),
+          api.get(`/api/splits/user/${userId}/stats/by-category`),
+          api.get(`/api/splits/user/${userId}/stats/by-month?months=6`),
         ])
 
         if (userRes.status === 'fulfilled') setUser(userRes.value.data)
         if (splitsRes.status === 'fulfilled') setSplits(splitsRes.value.data)
         if (expensesRes.status === 'fulfilled') setExpenses(expensesRes.value.data)
+        if (categoryStatsRes.status === 'fulfilled') setCategoryStats(categoryStatsRes.value.data)
+        if (monthlyStatsRes.status === 'fulfilled') setMonthlyStats(monthlyStatsRes.value.data)
       } finally {
         setLoading(false)
       }
@@ -105,6 +113,22 @@ export default function DashboardPage() {
           <div className="card-glass p-4 flex flex-col gap-1">
             <p className="text-white/50 text-xs">Pagaste</p>
             <p className="text-green-500 text-2xl font-bold">${totalPaid.toFixed(2)}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Gráficos */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="card-glass p-4 flex flex-col gap-3">
+          <p className="text-white/40 text-xs uppercase tracking-widest">Gastos por categoría</p>
+          <div className="h-64">
+            <CategoryDoughnutChart stats={categoryStats} />
+          </div>
+        </div>
+        <div className="card-glass p-4 flex flex-col gap-3">
+          <p className="text-white/40 text-xs uppercase tracking-widest">Gastos mensuales</p>
+          <div className="h-64">
+            <MonthlyBarChart stats={monthlyStats} />
           </div>
         </div>
       </div>

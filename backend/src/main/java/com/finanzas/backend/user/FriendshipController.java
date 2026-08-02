@@ -60,4 +60,11 @@ public class FriendshipController {
                 .stream().map(FriendshipResponse::from).toList();
         return ResponseEntity.ok(pending);
     }
+
+    @GetMapping("/sent")
+    public ResponseEntity<List<FriendshipResponse>> getSent(@RequestHeader("X-User-Id") Long userId) {
+        List<FriendshipResponse> sent = friendshipService.getSentRequests(userId)
+                .stream().map(FriendshipResponse::from).toList();
+        return ResponseEntity.ok(sent);
+    }
 }
