@@ -4,6 +4,7 @@ import com.finanzas.backend.common.exception.DuplicateResourceException;
 import com.finanzas.backend.common.exception.ResourceNotFoundException;
 import com.finanzas.backend.common.exception.UnauthorizedException;
 import com.finanzas.backend.common.exception.ValidationException;
+import com.finanzas.backend.notification.NotificationService;
 import com.finanzas.backend.user.User;
 import com.finanzas.backend.user.UserService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ public class GroupService {
 
     private final GroupRepository groupRepository;
     private final UserService userService;
+    private final NotificationService notificationService;
 
     @Transactional
     public Group createGroup(Long creatorId, String name) {
@@ -38,13 +40,19 @@ public class GroupService {
         Group group = getById(groupId);
         validateMember(group, userId);
 
+        User actor = userService.getById(userId);
         User member = userService.getById(memberId);
         if (group.getMembers().stream().anyMatch(u -> u.getId().equals(memberId))) {
             throw new DuplicateResourceException("El usuario ya es miembro del grupo");
         }
 
         group.getMembers().add(member);
-        return groupRepository.save(group);
+        Group saved = groupRepository.save(group);
+
+        String message = String.format("%s te agregó al grupo %s", actor.getUsername(), saved.getName());
+        notificationService.create(memberId, "GROUP_MEMBER_ADDED", message, saved.getId(), "GROUP");
+
+        return saved;
     }
 
     @Transactional

@@ -6,6 +6,7 @@ import com.finanzas.backend.common.exception.UnauthorizedException;
 import com.finanzas.backend.expense.dto.CreateExpenseRequest;
 import com.finanzas.backend.group.Group;
 import com.finanzas.backend.group.GroupRepository;
+import com.finanzas.backend.notification.NotificationService;
 import com.finanzas.backend.split.Split;
 import com.finanzas.backend.user.User;
 import com.finanzas.backend.user.UserService;
@@ -27,6 +28,7 @@ public class ExpenseService {
     private final UserService userService;
     private final GroupRepository groupRepository;
     private final CategoryRepository categoryRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public Expense createFromRequest(CreateExpenseRequest request, Long userId) {
@@ -58,7 +60,26 @@ public class ExpenseService {
 
         List<Split> splits = buildSplits(expense, request.getParticipantIds(), request.getCustomValues());
         expense.setSplits(splits);
-        return expenseRepository.save(expense);
+        Expense saved = expenseRepository.save(expense);
+
+        if (group != null) {
+            notifyGroupMembers(saved, group);
+        }
+
+        return saved;
+    }
+
+    private void notifyGroupMembers(Expense expense, Group group) {
+        String message = String.format(
+                "%s agregó un gasto de $%s en %s: %s",
+                expense.getPaidBy().getUsername(), expense.getAmount(), group.getName(), expense.getDescription()
+        );
+
+        for (User member : group.getMembers()) {
+            if (!member.getId().equals(expense.getPaidBy().getId())) {
+                notificationService.create(member.getId(), "EXPENSE_CREATED", message, expense.getId(), "EXPENSE");
+            }
+        }
     }
 
     private void validateGroupMember(Group group, Long userId) {

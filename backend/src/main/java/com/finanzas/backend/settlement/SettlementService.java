@@ -5,6 +5,7 @@ import com.finanzas.backend.common.exception.UnauthorizedException;
 import com.finanzas.backend.common.exception.ValidationException;
 import com.finanzas.backend.group.Group;
 import com.finanzas.backend.group.GroupService;
+import com.finanzas.backend.notification.NotificationService;
 import com.finanzas.backend.user.User;
 import com.finanzas.backend.user.UserService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class SettlementService {
     private final SettlementRepository settlementRepository;
     private final GroupService groupService;
     private final UserService userService;
+    private final NotificationService notificationService;
 
     @Transactional
     public Settlement createSettlement(Long groupId, Long paidById, Long paidToId,
@@ -65,7 +67,16 @@ public class SettlementService {
 
         settlement.setStatus(Settlement.Status.CONFIRMED);
         settlement.setSettledAt(LocalDateTime.now());
-        return settlementRepository.save(settlement);
+        Settlement saved = settlementRepository.save(settlement);
+
+        String message = String.format(
+                "%s confirmó que le pagaste $%s", saved.getPaidTo().getUsername(), saved.getAmount()
+        );
+        notificationService.create(
+                saved.getPaidBy().getId(), "SETTLEMENT_CONFIRMED", message, saved.getId(), "SETTLEMENT"
+        );
+
+        return saved;
     }
 
     @Transactional
