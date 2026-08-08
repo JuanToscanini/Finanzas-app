@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
+import Navbar from '@/components/Navbar'
 
 type SplitType = 'EQUAL' | 'PERCENTAGE' | 'EXACT'
 
@@ -183,6 +184,7 @@ export default function NewExpensePage() {
 
   return (
     <div className="min-h-screen px-4 py-6 max-w-2xl mx-auto flex flex-col gap-6">
+      <Navbar />
       <h1 className="text-xl font-semibold text-white">Nuevo gasto</h1>
 
       {groups.length === 0 ? (

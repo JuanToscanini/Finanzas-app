@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
 import CategoryDoughnutChart, { CategoryStat } from './CategoryDoughnutChart'
 import MonthlyBarChart, { MonthlyStat } from './MonthlyBarChart'
+import Navbar from '@/components/Navbar'
 
 interface UserResponse {
   id: number
@@ -89,17 +90,14 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen px-4 py-6 max-w-2xl mx-auto flex flex-col gap-6">
 
-      {/* Header */}
+      {/* Navbar global */}
+      <Navbar username={user?.username} />
+
+      {/* Saludo */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-white">
-          Hola, <span className="text-accent-orange">{user?.username ?? 'Usuario'}</span> 👋
+          Hola, <span className="text-accent-orange">{user?.username ?? 'Usuario'}</span>
         </h1>
-        <div
-          onClick={handleLogout}
-          className="text-sm text-white/50 hover:text-white cursor-pointer transition-colors"
-        >
-          Cerrar sesión
-        </div>
       </div>
 
       {/* Balance */}
@@ -137,7 +135,7 @@ export default function DashboardPage() {
       <div>
         <p className="text-white/40 text-xs uppercase tracking-widest mb-3">Deudas pendientes</p>
         {splits.length === 0 ? (
-          <p className="text-white/40 text-sm text-center py-6">¡Estás al día! 🎉</p>
+          <p className="text-white/40 text-sm text-center py-6">¡Estás al día!</p>
         ) : (
           <div className="flex flex-col gap-2">
             {splits.map((split) => (
