@@ -7,7 +7,8 @@ const api = axios.create({
 
 // Agrega el JWT y el id del usuario autenticado en cada request
 api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
+  const isAuthEndpoint = config.url?.startsWith('/api/auth/')
+  if (typeof window !== 'undefined' && !isAuthEndpoint) {
     const token = localStorage.getItem('token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
