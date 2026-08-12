@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
@@ -36,10 +37,8 @@ export default function Navbar({ username: initialUsername }: NavbarProps) {
       <div className="card-glass px-5 py-3.5 flex items-center justify-between shadow-lg">
         {/* Logotipo / Marca */}
         <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent-orange to-accent-orange-light flex items-center justify-center font-bold text-white shadow-md shadow-accent-orange/30 group-hover:scale-105 transition-transform">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+          <div className="w-9 h-9 rounded-xl overflow-hidden shadow-md shadow-accent-orange/30 group-hover:scale-105 transition-transform">
+            <Image src="/fotoApp.png" alt="Finanzas" width={36} height={36} className="w-full h-full object-cover" />
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-white tracking-wide text-base group-hover:text-accent-orange transition-colors">
@@ -53,6 +52,19 @@ export default function Navbar({ username: initialUsername }: NavbarProps) {
 
         {/* Acciones de navegación */}
         <div className="flex items-center gap-3">
+          {/* Botón Mis Grupos */}
+          <Link
+            href="/groups"
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${
+              pathname === '/groups' || (pathname?.startsWith('/groups/') && pathname !== '/groups/new')
+                ? 'bg-accent-orange text-white shadow-accent-orange/20'
+                : 'bg-white/10 text-white/80 hover:bg-white/20 hover:text-white'
+            }`}
+          >
+            <span className="hidden sm:inline">Mis grupos</span>
+            <span className="sm:hidden">Grupos</span>
+          </Link>
+
           {/* Botón Nuevo Grupo */}
           <Link
             href="/groups/new"

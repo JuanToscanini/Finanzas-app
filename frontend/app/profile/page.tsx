@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
 import Navbar from '@/components/Navbar'
@@ -9,26 +10,42 @@ interface UserProfile {
   id?: number
   username: string
   email: string
+  createdAt?: string
 }
 
-interface MiniExpense {
-  id: string
+interface ExpenseResponse {
+  id: number
   description: string
-  payer: string
   amount: number
-  categoryType: 'market' | 'transport' | 'food' | 'services' | 'internet' | 'cleaning' | 'grill' | 'drinks'
   date: string
 }
 
-interface GroupCardMock {
-  id: string
+interface GroupMemberResponse {
+  id: number
+  username: string
+  email: string
+}
+
+interface GroupResponse {
+  id: number
   name: string
-  type: 'vacation' | 'home' | 'social'
-  membersCount: number
-  membersPreview: string[]
-  myBalance: number
-  totalSpent: number
-  recentExpenses: MiniExpense[]
+  members: GroupMemberResponse[]
+}
+
+interface UserBalanceResponse {
+  userId: number
+  username: string
+  netBalance: number
+}
+
+interface GroupBalanceResponse {
+  groupId: number
+  balances: UserBalanceResponse[]
+  suggestedSettlements: unknown[]
+}
+
+interface GroupWithBalance extends GroupResponse {
+  myBalance: number | null
 }
 
 export default function ProfilePage() {
@@ -36,6 +53,10 @@ export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'groups' | 'activity' | 'settings'>('groups')
+  const [profileLoadFailed, setProfileLoadFailed] = useState(false)
+  const [realExpenseCount, setRealExpenseCount] = useState<number | null>(null)
+  const [groups, setGroups] = useState<GroupWithBalance[]>([])
+  const [groupsLoading, setGroupsLoading] = useState(true)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -46,12 +67,14 @@ export default function ProfilePage() {
 
     const storedUsername = localStorage.getItem('username')
     const storedEmail = localStorage.getItem('email') || `${storedUsername || 'usuario'}@finanzas.app`
+    const userId = localStorage.getItem('userId')
 
     const fetchUser = async () => {
       try {
         const res = await api.get('/api/users/me')
         setUser(res.data)
       } catch {
+        setProfileLoadFailed(true)
         setUser({
           username: storedUsername || 'Usuario',
           email: storedEmail,
@@ -61,109 +84,46 @@ export default function ProfilePage() {
       }
     }
 
-    fetchUser()
-  }, [router])
+    const fetchExpenseCount = async () => {
+      try {
+        const res = await api.get<ExpenseResponse[]>(`/api/expenses/user/${userId}`)
+        setRealExpenseCount(res.data.length)
+      } catch {
+        setRealExpenseCount(null)
+      }
+    }
 
-  // Datos mock para los grupos y sus miniaturas de gastos (sin emojis)
-  const mockGroups: GroupCardMock[] = [
-    {
-      id: 'g1',
-      name: 'Vacaciones',
-      type: 'vacation',
-      membersCount: 4,
-      membersPreview: ['Juan', 'Sofia', 'Mateo', 'Lucia'],
-      myBalance: 15400,
-      totalSpent: 145000,
-      recentExpenses: [
-        {
-          id: 'e1',
-          description: 'Supermercado e insumos',
-          payer: 'Juan',
-          amount: 32500,
-          categoryType: 'market',
-          date: 'Ayer',
-        },
-        {
-          id: 'e2',
-          description: 'Nafta y peajes',
-          payer: 'Mateo',
-          amount: 18000,
-          categoryType: 'transport',
-          date: '04/08',
-        },
-        {
-          id: 'e3',
-          description: 'Cena de bienvenida',
-          payer: 'Sofia',
-          amount: 24000,
-          categoryType: 'food',
-          date: '02/08',
-        },
-      ],
-    },
-    {
-      id: 'g2',
-      name: 'Departamento',
-      type: 'home',
-      membersCount: 3,
-      membersPreview: ['Juan', 'Lucas', 'Camila'],
-      myBalance: -4200,
-      totalSpent: 98200,
-      recentExpenses: [
-        {
-          id: 'e4',
-          description: 'Servicio de Luz y Gas',
-          payer: 'Lucas',
-          amount: 22000,
-          categoryType: 'services',
-          date: 'Hoy',
-        },
-        {
-          id: 'e5',
-          description: 'Internet Fibra Óptica',
-          payer: 'Juan',
-          amount: 14500,
-          categoryType: 'internet',
-          date: '01/08',
-        },
-        {
-          id: 'e6',
-          description: 'Productos de limpieza',
-          payer: 'Lucas',
-          amount: 8700,
-          categoryType: 'cleaning',
-          date: '28/07',
-        },
-      ],
-    },
-    {
-      id: 'g3',
-      name: 'Asado',
-      type: 'social',
-      membersCount: 5,
-      membersPreview: ['Juan', 'Agustin', 'Nico', 'Franco', 'Tomas'],
-      myBalance: 0,
-      totalSpent: 52000,
-      recentExpenses: [
-        {
-          id: 'e7',
-          description: 'Carne, achuras y carbón',
-          payer: 'Juan',
-          amount: 38000,
-          categoryType: 'grill',
-          date: '02/08',
-        },
-        {
-          id: 'e8',
-          description: 'Bebidas, hielo y postre',
-          payer: 'Agustin',
-          amount: 14000,
-          categoryType: 'drinks',
-          date: '02/08',
-        },
-      ],
-    },
-  ]
+    const fetchGroups = async () => {
+      try {
+        const groupsRes = await api.get<GroupResponse[]>('/api/groups')
+        const baseGroups = groupsRes.data
+        const numericUserId = Number(userId)
+
+        const balanceResults = await Promise.allSettled(
+          baseGroups.map((g) => api.get<GroupBalanceResponse>(`/api/groups/${g.id}/balance`))
+        )
+
+        const withBalances: GroupWithBalance[] = baseGroups.map((g, idx) => {
+          const result = balanceResults[idx]
+          const myBalance =
+            result.status === 'fulfilled'
+              ? result.value.data.balances.find((b) => b.userId === numericUserId)?.netBalance ?? 0
+              : null
+          return { ...g, myBalance }
+        })
+
+        setGroups(withBalances)
+      } catch {
+        setGroups([])
+      } finally {
+        setGroupsLoading(false)
+      }
+    }
+
+    fetchUser()
+    fetchExpenseCount()
+    fetchGroups()
+  }, [router])
 
   if (loading) {
     return (
@@ -177,47 +137,30 @@ export default function ProfilePage() {
   const email = user?.email || `${username.toLowerCase()}@finanzas.app`
   const initial = username.charAt(0).toUpperCase()
 
-  const totalBalance = mockGroups.reduce((acc, g) => acc + g.myBalance, 0)
-  const totalGroupsCount = mockGroups.length
+  const memberSince = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+    : null
 
-  const renderGroupIcon = (type: string) => {
-    switch (type) {
-      case 'vacation':
-        return (
-          <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        )
-      case 'home':
-        return (
-          <svg className="w-5 h-5 text-accent-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-        )
-      case 'social':
-      default:
-        return (
-          <svg className="w-5 h-5 text-accent-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-        )
-    }
-  }
-
-  const renderCategoryIcon = (cat: string) => {
-    return (
-      <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-white/80 shrink-0 border border-white/10">
-        <svg className="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-        </svg>
-      </div>
-    )
-  }
+  const totalBalance = groups.reduce((acc, g) => acc + (g.myBalance ?? 0), 0)
+  const totalGroupsCount = groups.length
+  const gastosTotales = realExpenseCount ?? 0
 
   return (
     <div className="min-h-screen px-4 py-6 max-w-2xl mx-auto flex flex-col gap-6">
       {/* Navbar global */}
       <Navbar username={username} />
+
+      {/* Aviso si no se pudo cargar el perfil real */}
+      {profileLoadFailed && (
+        <div className="card-glass px-4 py-3 flex items-center gap-2.5 border border-amber-500/30 bg-amber-500/10">
+          <svg className="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <p className="text-amber-200 text-xs">
+            No pudimos cargar tu perfil desde el servidor. Estás viendo datos guardados en este dispositivo.
+          </p>
+        </div>
+      )}
 
       {/* Tarjeta Perfil Principal / Avatar Header */}
       <div className="card-glass p-6 flex flex-col sm:flex-row items-center sm:items-start gap-5 relative overflow-hidden">
@@ -248,7 +191,7 @@ export default function ProfilePage() {
             <svg className="w-3.5 h-3.5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <span>Miembro desde Julio 2026</span>
+            <span>{memberSince ? `Miembro desde ${memberSince}` : 'Fecha de alta no disponible'}</span>
           </p>
         </div>
 
@@ -277,7 +220,7 @@ export default function ProfilePage() {
         </div>
         <div className="card-glass p-4 flex flex-col items-center justify-center text-center gap-1">
           <p className="text-white/40 text-[11px] uppercase tracking-wider font-mono">Gastos Totales</p>
-          <p className="text-accent-blue text-xl font-extrabold">8</p>
+          <p className="text-accent-blue text-xl font-extrabold">{gastosTotales}</p>
         </div>
       </div>
 
@@ -334,96 +277,57 @@ export default function ProfilePage() {
             <h2 className="text-sm font-semibold text-white/60 uppercase tracking-widest flex items-center gap-2">
               Mis Grupos de Gastos
             </h2>
-            <span className="text-xs text-white/40 font-mono">3 Grupos activos</span>
+            <span className="text-xs text-white/40 font-mono">
+              {groups.length} {groups.length === 1 ? 'grupo activo' : 'grupos activos'}
+            </span>
           </div>
 
-          <div className="flex flex-col gap-4">
-            {mockGroups.map((group) => (
-              <div
-                key={group.id}
-                className="card-glass p-5 flex flex-col gap-4 hover:border-white/30 transition-all hover:shadow-xl"
+          {groupsLoading ? (
+            <p className="text-white/40 text-sm text-center py-6">Cargando grupos...</p>
+          ) : groups.length === 0 ? (
+            <div className="card-glass p-6 flex flex-col items-center gap-3 text-center">
+              <p className="text-white/50 text-sm">Todavía no sos parte de ningún grupo.</p>
+              <Link
+                href="/groups/new"
+                className="bg-accent-orange text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-accent-orange-light transition-colors"
               >
-                {/* Cabecera del Grupo */}
-                <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-3.5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-white/10 flex items-center justify-center shadow-inner border border-white/15 shrink-0">
-                      {renderGroupIcon(group.type)}
-                    </div>
-                    <div className="flex flex-col">
-                      <h3 className="text-white font-bold text-base tracking-tight">{group.name}</h3>
-                      <div className="flex items-center gap-2 text-xs text-white/50 mt-0.5">
-                        <span>{group.membersCount} integrantes</span>
-                        <span>•</span>
-                        <span className="font-mono text-white/40">Total: ${group.totalSpent.toLocaleString('es-AR')}</span>
-                      </div>
-                    </div>
+                Crear mi primer grupo
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {groups.map((group) => (
+                <Link
+                  key={group.id}
+                  href={`/groups/${group.id}`}
+                  className="card-glass p-5 flex items-center justify-between gap-4 hover:border-white/30 transition-all"
+                >
+                  <div className="flex flex-col gap-1">
+                    <h3 className="text-white font-bold text-base tracking-tight">{group.name}</h3>
+                    <p className="text-white/40 text-xs">
+                      {group.members.length} {group.members.length === 1 ? 'integrante' : 'integrantes'}
+                    </p>
                   </div>
 
-                  {/* Badge de Balance en este grupo */}
-                  <div className="flex flex-col items-end">
-                    {group.myBalance > 0 ? (
-                      <span className="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-xl border border-emerald-500/30 flex items-center gap-1 shadow-sm">
-                        <span>Te deben</span>
-                        <span>+${group.myBalance.toLocaleString('es-AR')}</span>
-                      </span>
-                    ) : group.myBalance < 0 ? (
-                      <span className="bg-red-500/20 text-red-400 text-xs font-bold px-3 py-1.5 rounded-xl border border-red-500/30 flex items-center gap-1 shadow-sm">
-                        <span>Debés</span>
-                        <span>${Math.abs(group.myBalance).toLocaleString('es-AR')}</span>
-                      </span>
-                    ) : (
-                      <span className="bg-white/10 text-white/70 text-xs font-semibold px-3 py-1.5 rounded-xl border border-white/15">
-                        Al día
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Integrantes */}
-                <div className="flex items-center justify-between text-xs text-white/60">
-                  <span className="text-white/40 font-mono text-[11px] uppercase tracking-wider">Integrantes:</span>
-                  <div className="flex items-center gap-1.5">
-                    {group.membersPreview.map((m, idx) => (
-                      <span
-                        key={idx}
-                        className="bg-white/10 border border-white/15 text-white/80 text-[11px] px-2 py-0.5 rounded-full font-medium"
-                      >
-                        {m}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Miniatura de Gastos Recientes del Grupo */}
-                <div className="flex flex-col gap-2 mt-1">
-                  <p className="text-[11px] text-white/40 uppercase tracking-widest font-mono">
-                    Últimos gastos con este grupo:
-                  </p>
-                  <div className="grid grid-cols-1 gap-2">
-                    {group.recentExpenses.map((exp) => (
-                      <div
-                        key={exp.id}
-                        className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-3.5 py-2.5 flex items-center justify-between transition-colors"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          {renderCategoryIcon(exp.categoryType)}
-                          <div className="flex flex-col">
-                            <span className="text-white text-xs font-semibold">{exp.description}</span>
-                            <span className="text-[11px] text-white/40">
-                              Pagó <strong className="text-white/70 font-normal">{exp.payer}</strong> • {exp.date}
-                            </span>
-                          </div>
-                        </div>
-                        <span className="text-xs font-bold text-accent-orange font-mono">
-                          ${exp.amount.toLocaleString('es-AR')}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                  {group.myBalance === null ? (
+                    <span className="text-white/30 text-xs">Sin datos</span>
+                  ) : group.myBalance > 0 ? (
+                    <span className="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-xl border border-emerald-500/30">
+                      Te deben ${group.myBalance.toFixed(2)}
+                    </span>
+                  ) : group.myBalance < 0 ? (
+                    <span className="bg-red-500/20 text-red-400 text-xs font-bold px-3 py-1.5 rounded-xl border border-red-500/30">
+                      Debés ${Math.abs(group.myBalance).toFixed(2)}
+                    </span>
+                  ) : (
+                    <span className="bg-white/10 text-white/70 text-xs font-semibold px-3 py-1.5 rounded-xl border border-white/15">
+                      Al día
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -433,6 +337,9 @@ export default function ProfilePage() {
           <h2 className="text-sm font-semibold text-white/60 uppercase tracking-widest">
             Resumen de Actividad
           </h2>
+          <div className="text-[11px] text-amber-300/80 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3.5 py-2">
+            Datos de ejemplo — el registro real de actividad todavía está en desarrollo.
+          </div>
           <div className="flex flex-col gap-3 text-sm text-white/70">
             <div className="p-3.5 bg-white/5 rounded-xl border border-white/10 flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
@@ -441,7 +348,7 @@ export default function ProfilePage() {
                 </svg>
               </div>
               <div>
-                <p className="text-white font-medium text-xs">Pago saldado en "Asado"</p>
+                <p className="text-white font-medium text-xs">Pago saldado en &quot;Asado&quot;</p>
                 <p className="text-[11px] text-white/40">Pagaste $14.000 a Agustin • Hace 2 días</p>
               </div>
             </div>
@@ -453,7 +360,7 @@ export default function ProfilePage() {
                 </svg>
               </div>
               <div>
-                <p className="text-white font-medium text-xs">Cargaste un gasto en "Vacaciones"</p>
+                <p className="text-white font-medium text-xs">Cargaste un gasto en &quot;Vacaciones&quot;</p>
                 <p className="text-[11px] text-white/40">Supermercado $32.500 • Hace 3 días</p>
               </div>
             </div>
@@ -465,7 +372,7 @@ export default function ProfilePage() {
                 </svg>
               </div>
               <div>
-                <p className="text-white font-medium text-xs">Te uniste a "Departamento"</p>
+                <p className="text-white font-medium text-xs">Te uniste a &quot;Departamento&quot;</p>
                 <p className="text-[11px] text-white/40">Invitado por Lucas • Hace 1 semana</p>
               </div>
             </div>
