@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import api from '../lib/api'
 
@@ -29,11 +30,17 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="card-glass-strong w-full max-w-sm p-8 flex flex-col gap-6">
+      <form
+        className="card-glass-strong w-full max-w-sm p-8 flex flex-col gap-6"
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (!loading) handleSubmit()
+        }}
+      >
 
         {/* Logo + título */}
         <div className="flex flex-col items-center gap-2">
-          <span className="text-5xl">💸</span>
+          <Image src="/fotoApp.png" alt="Finanzas App" width={64} height={64} className="w-16 h-16 rounded-xl object-cover" />
           <h1 className="text-2xl font-bold tracking-tight">
             <span className="text-accent-orange">Finanzas</span>
             <span className="text-white"> App</span>
@@ -61,31 +68,33 @@ export default function LoginPage() {
 
         {/* Botón */}
         <div className="flex flex-col gap-3">
-          <div
-            onClick={loading ? undefined : handleSubmit}
-            className={`w-full bg-accent-orange text-white text-sm font-semibold rounded-xl px-4 py-3 text-center transition-colors select-none ${
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full bg-accent-orange text-white text-sm font-semibold rounded-xl px-4 py-3 text-center transition-colors ${
               loading
                 ? 'opacity-50 cursor-not-allowed'
                 : 'hover:bg-accent-orange-light cursor-pointer'
             }`}
           >
             {loading ? 'Entrando...' : 'Entrar'}
-          </div>
+          </button>
           {errorMsg && (
             <p className="text-red-400 text-sm text-center mt-2">{errorMsg}</p>
           )}
           <p className="text-center text-sm text-white/40">
             ¿No tenés cuenta?{' '}
-            <span
+            <button
+              type="button"
               onClick={() => router.push('/register')}
               className="text-accent-blue cursor-pointer hover:underline"
             >
               Registrate
-            </span>
+            </button>
           </p>
         </div>
 
-      </div>
+      </form>
     </div>
   )
 }

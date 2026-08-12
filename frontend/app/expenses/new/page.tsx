@@ -192,7 +192,13 @@ export default function NewExpensePage() {
           Todavía no sos miembro de ningún grupo. Creá o unite a uno antes de cargar un gasto.
         </div>
       ) : (
-        <div className="card-glass-strong p-6 flex flex-col gap-5">
+        <form
+          className="card-glass-strong p-6 flex flex-col gap-5"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!submitting) handleSubmit()
+          }}
+        >
 
           {/* Descripción + monto */}
           <div className="flex flex-col gap-3">
@@ -278,8 +284,9 @@ export default function NewExpensePage() {
               <p className="text-white/40 text-xs uppercase tracking-widest">¿Cómo se divide?</p>
               <div className="flex gap-2">
                 {(['EQUAL', 'PERCENTAGE', 'EXACT'] as SplitType[]).map((type) => (
-                  <div
+                  <button
                     key={type}
+                    type="button"
                     onClick={() => setSplitType(type)}
                     className={`flex-1 text-center text-sm rounded-xl px-3 py-2 cursor-pointer select-none transition-colors ${
                       splitType === type
@@ -288,7 +295,7 @@ export default function NewExpensePage() {
                     }`}
                   >
                     {type === 'EQUAL' ? 'Partes iguales' : type === 'PERCENTAGE' ? 'Porcentaje' : 'Monto exacto'}
-                  </div>
+                  </button>
                 ))}
               </div>
 
@@ -355,17 +362,18 @@ export default function NewExpensePage() {
 
           {/* Submit */}
           <div className="flex flex-col gap-3">
-            <div
-              onClick={submitting ? undefined : handleSubmit}
-              className={`w-full bg-accent-orange text-white text-sm font-semibold rounded-xl px-4 py-3 text-center transition-colors select-none ${
+            <button
+              type="submit"
+              disabled={submitting}
+              className={`w-full bg-accent-orange text-white text-sm font-semibold rounded-xl px-4 py-3 text-center transition-colors ${
                 submitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent-orange-light cursor-pointer'
               }`}
             >
               {submitting ? 'Guardando...' : 'Guardar gasto'}
-            </div>
+            </button>
             {errorMsg && <p className="text-red-400 text-sm text-center">{errorMsg}</p>}
           </div>
-        </div>
+        </form>
       )}
     </div>
   )

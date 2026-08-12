@@ -16,6 +16,8 @@ interface UserResponse {
 interface SplitResponse {
   id: number
   expenseId: number
+  expenseDescription: string | null
+  paidByUserId: number | null
   amount: number
   isSettled: boolean
 }
@@ -69,14 +71,13 @@ export default function DashboardPage() {
     fetchAll()
   }, [router])
 
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('userId')
-    localStorage.removeItem('username')
-    router.push('/')
-  }
+  const currentUserId = Number(typeof window !== 'undefined' ? localStorage.getItem('userId') : NaN)
 
-  const totalDebt = splits.reduce((acc, s) => acc + Number(s.amount), 0)
+  // Un split solo es una deuda real si otra persona pagó el gasto.
+  // Si vos pagaste el gasto, tu propio split es la parte que ya cubriste, no algo que debas.
+  const pendingDebts = splits.filter((s) => s.paidByUserId !== currentUserId)
+
+  const totalDebt = pendingDebts.reduce((acc, s) => acc + Number(s.amount), 0)
   const totalPaid = expenses.reduce((acc, e) => acc + Number(e.amount), 0)
 
   if (loading) {
@@ -134,14 +135,14 @@ export default function DashboardPage() {
       {/* Deudas pendientes */}
       <div>
         <p className="text-white/40 text-xs uppercase tracking-widest mb-3">Deudas pendientes</p>
-        {splits.length === 0 ? (
+        {pendingDebts.length === 0 ? (
           <p className="text-white/40 text-sm text-center py-6">¡Estás al día!</p>
         ) : (
           <div className="flex flex-col gap-2">
-            {splits.map((split) => (
+            {pendingDebts.map((split) => (
               <div key={split.id} className="card-glass px-4 py-3 flex items-center justify-between">
                 <div className="flex flex-col">
-                  <p className="text-white text-sm">Gasto sin nombre</p>
+                  <p className="text-white text-sm">{split.expenseDescription ?? 'Gasto sin nombre'}</p>
                   <span className="text-xs mt-1 inline-block bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full w-fit">
                     Pendiente
                   </span>
