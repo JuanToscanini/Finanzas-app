@@ -57,6 +57,7 @@ export default function ProfilePage() {
   const [realExpenseCount, setRealExpenseCount] = useState<number | null>(null)
   const [groups, setGroups] = useState<GroupWithBalance[]>([])
   const [groupsLoading, setGroupsLoading] = useState(true)
+  const [unreadNotifications, setUnreadNotifications] = useState(0)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -120,9 +121,19 @@ export default function ProfilePage() {
       }
     }
 
+    const fetchUnreadNotifications = async () => {
+      try {
+        const res = await api.get<{ count: number }>(`/api/notifications/user/${userId}/unread/count`)
+        setUnreadNotifications(res.data.count)
+      } catch {
+        setUnreadNotifications(0)
+      }
+    }
+
     fetchUser()
     fetchExpenseCount()
     fetchGroups()
+    fetchUnreadNotifications()
   }, [router])
 
   if (loading) {
@@ -388,12 +399,22 @@ export default function ProfilePage() {
           </h2>
 
           <div className="flex flex-col gap-2">
-            <button className="w-full text-left p-3.5 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-white text-xs font-semibold flex items-center justify-between transition-colors">
+            <button
+              onClick={() => router.push('/notifications')}
+              className="w-full text-left p-3.5 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-white text-xs font-semibold flex items-center justify-between transition-colors"
+            >
               <div className="flex items-center gap-3">
                 <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
-                <span>Notificaciones y Alertas</span>
+                <span className="flex items-center gap-2">
+                  Notificaciones y Alertas
+                  {unreadNotifications > 0 && (
+                    <span className="bg-accent-orange text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                      {unreadNotifications}
+                    </span>
+                  )}
+                </span>
               </div>
               <span className="text-white/40">›</span>
             </button>
