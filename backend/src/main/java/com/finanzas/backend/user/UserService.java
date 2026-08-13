@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -41,6 +42,13 @@ public class UserService {
 
     public boolean existsByUsername(String username) {
         return userRepository.existsByUsername(username);
+    }
+
+    public List<User> search(String query) {
+        if (query == null || query.isBlank()) {
+            return List.of();
+        }
+        return userRepository.search(query);
     }
 
     public void updateLastLogin(User user) {

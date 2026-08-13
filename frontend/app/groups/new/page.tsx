@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
 import Navbar from '@/components/Navbar'
@@ -115,7 +116,11 @@ export default function NewGroupPage() {
             <p className="text-white/40 text-sm">Cargando amigos...</p>
           ) : friends.length === 0 ? (
             <p className="text-white/40 text-sm">
-              Todavía no tenés amigos agregados. Podés crear el grupo igual y sumar gente después.
+              Todavía no tenés amigos agregados. Podés crear el grupo igual y sumar gente después, o{' '}
+              <Link href="/friends" className="text-accent-blue hover:underline">
+                agregar amigos ahora
+              </Link>
+              .
             </p>
           ) : (
             <div className="flex flex-col gap-2">

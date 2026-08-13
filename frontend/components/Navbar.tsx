@@ -78,6 +78,18 @@ export default function Navbar({ username: initialUsername }: NavbarProps) {
             <span className="hidden sm:inline">Nuevo grupo</span>
           </Link>
 
+          {/* Botón Amigos */}
+          <Link
+            href="/friends"
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${
+              pathname === '/friends'
+                ? 'bg-accent-orange text-white shadow-accent-orange/20'
+                : 'bg-white/10 text-white/80 hover:bg-white/20 hover:text-white'
+            }`}
+          >
+            <span>Amigos</span>
+          </Link>
+
           {/* Botón Avatar de Perfil */}
           <Link
             href="/profile"

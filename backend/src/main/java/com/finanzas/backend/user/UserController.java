@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -20,6 +22,17 @@ public class UserController {
         return userService.findByEmail(email)
                 .map(user -> ResponseEntity.ok(UserResponse.from(user)))
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<UserResponse>> search(
+            @RequestParam String query,
+            @RequestHeader("X-User-Id") Long userId) {
+        List<UserResponse> results = userService.search(query).stream()
+                .filter(u -> !u.getId().equals(userId))
+                .map(UserResponse::from)
+                .toList();
+        return ResponseEntity.ok(results);
     }
 
     @GetMapping("/{id}")
