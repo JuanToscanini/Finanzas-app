@@ -15,6 +15,7 @@ public class ExpenseResponse {
     private String currency;
     private String splitType;
     private Long groupId;
+    private Long categoryId;
     private UserResponse paidBy;
     private LocalDate date;
     private String notes;
@@ -28,6 +29,7 @@ public class ExpenseResponse {
         dto.currency = expense.getCurrency();
         dto.splitType = expense.getSplitType().name();
         dto.groupId = expense.getGroup() != null ? expense.getGroup().getId() : null;
+        dto.categoryId = expense.getCategory() != null ? expense.getCategory().getId() : null;
         dto.paidBy = UserResponse.from(expense.getPaidBy());
         dto.date = expense.getDate();
         dto.notes = expense.getNotes();
