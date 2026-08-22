@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import api from '@/lib/api'
 
 interface NavbarProps {
   username?: string
@@ -12,14 +13,23 @@ interface NavbarProps {
 export default function Navbar({ username: initialUsername }: NavbarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const [username, setUsername] = useState(initialUsername || '')
+  const username =
+    initialUsername || (typeof window !== 'undefined' ? localStorage.getItem('username') ?? '' : '')
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
-    if (!username && typeof window !== 'undefined') {
-      const stored = localStorage.getItem('username')
-      if (stored) setUsername(stored)
+    const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null
+    if (!userId) return
+
+    const fetchUnreadCount = async () => {
+      const res = await api
+        .get<{ count: number }>(`/api/notifications/user/${userId}/unread/count`)
+        .catch(() => null)
+      if (res) setUnreadCount(res.data.count)
     }
-  }, [username])
+
+    fetchUnreadCount()
+  }, [pathname])
 
   const initial = username ? username.charAt(0).toUpperCase() : 'U'
 
@@ -105,6 +115,25 @@ export default function Navbar({ username: initialUsername }: NavbarProps) {
             </div>
             {/* Indicador de estado online */}
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#0F1B2D] rounded-full"></span>
+          </Link>
+
+          {/* Botón Notificaciones */}
+          <Link
+            href="/notifications"
+            title="Ver notificaciones"
+            className={`relative px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${
+              pathname === '/notifications'
+                ? 'bg-accent-orange text-white shadow-accent-orange/20'
+                : 'bg-white/10 text-white/80 hover:bg-white/20 hover:text-white'
+            }`}
+          >
+            <span>🔔</span>
+            <span className="hidden sm:inline">Notificaciones</span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </Link>
 
           {/* Salir */}

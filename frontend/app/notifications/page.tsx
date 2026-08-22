@@ -1,10 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
-import Navbar from '@/components/Navbar'
 
 interface NotificationResponse {
   id: number
@@ -20,10 +18,29 @@ interface NotificationResponse {
 
 export default function NotificationsPage() {
   const router = useRouter()
+  const currentUserId = Number(typeof window !== 'undefined' ? localStorage.getItem('userId') : NaN)
+
   const [notifications, setNotifications] = useState<NotificationResponse[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [errorMsg, setErrorMsg] = useState('')
+
   const [markingAll, setMarkingAll] = useState(false)
+  const [markingId, setMarkingId] = useState<number | null>(null)
+  const [actionError, setActionError] = useState('')
+
+  const fetchData = async () => {
+    try {
+      const [notificationsRes, unreadRes] = await Promise.allSettled([
+        api.get<NotificationResponse[]>(`/api/notifications/user/${currentUserId}`),
+        api.get<{ count: number }>(`/api/notifications/user/${currentUserId}/unread/count`),
+      ])
+
+      if (notificationsRes.status === 'fulfilled') setNotifications(notificationsRes.value.data)
+      if (unreadRes.status === 'fulfilled') setUnreadCount(unreadRes.value.data.count)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -32,52 +49,43 @@ export default function NotificationsPage() {
       return
     }
 
-    const userId = localStorage.getItem('userId')
-
-    const fetchNotifications = async () => {
-      try {
-        const res = await api.get<NotificationResponse[]>(`/api/notifications/user/${userId}`)
-        setNotifications(res.data)
-      } catch {
-        setErrorMsg('No pudimos cargar tus notificaciones. Intentá de nuevo más tarde.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchNotifications()
+    fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
 
-  const markAsRead = async (notificationId: number) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
-    )
-    try {
-      await api.put(`/api/notifications/${notificationId}/read`)
-    } catch {
-      // La notificación puede haber quedado marcada visualmente aunque falle la sincronización con el backend
-    }
-  }
-
-  const handleItemClick = (notification: NotificationResponse) => {
-    if (notification.isRead) return
-    markAsRead(notification.id)
-  }
-
   const handleMarkAllAsRead = async () => {
-    const userId = localStorage.getItem('userId')
+    setActionError('')
     setMarkingAll(true)
     try {
-      await api.put(`/api/notifications/user/${userId}/read-all`)
+      await api.put(`/api/notifications/user/${currentUserId}/read-all`)
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
-    } catch {
-      setErrorMsg('No se pudieron marcar todas las notificaciones como leídas.')
+      setUnreadCount(0)
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setActionError(message ?? 'No se pudieron marcar todas como leídas.')
     } finally {
       setMarkingAll(false)
     }
   }
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length
+  const handleMarkAsRead = async (notificationId: number) => {
+    setActionError('')
+    setMarkingId(notificationId)
+    try {
+      await api.put(`/api/notifications/${notificationId}/read`)
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
+      )
+      setUnreadCount((prev) => Math.max(0, prev - 1))
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setActionError(message ?? 'No se pudo marcar la notificación como leída.')
+    } finally {
+      setMarkingId(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -89,79 +97,77 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-screen px-4 py-6 max-w-2xl mx-auto flex flex-col gap-6">
-      <Navbar />
-
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-white">Notificaciones</h1>
-        {unreadCount > 0 && (
-          <button
-            type="button"
-            onClick={handleMarkAllAsRead}
-            disabled={markingAll}
-            className={`text-xs font-semibold px-3.5 py-2 rounded-xl transition-colors ${
-              markingAll
-                ? 'bg-white/5 text-white/30 cursor-not-allowed'
-                : 'bg-white/10 text-white/80 hover:bg-white/20 hover:text-white'
-            }`}
-          >
-            {markingAll ? 'Marcando...' : 'Marcar todas como leídas'}
-          </button>
-        )}
+      <div className="grid grid-cols-3 items-center card-glass px-5 py-3.5">
+        <button
+          type="button"
+          onClick={() => router.push('/dashboard')}
+          className="justify-self-start text-white/60 hover:text-white text-sm transition-colors"
+        >
+          ← Volver
+        </button>
+        <h1 className="justify-self-center text-lg font-semibold text-white">Notificaciones</h1>
+        <button
+          type="button"
+          onClick={handleMarkAllAsRead}
+          disabled={markingAll || unreadCount === 0}
+          className={`justify-self-end text-xs font-semibold px-3.5 py-2 rounded-xl transition-colors ${
+            markingAll || unreadCount === 0
+              ? 'bg-white/5 text-white/30 cursor-not-allowed'
+              : 'bg-white/10 text-white/80 hover:bg-white/20 hover:text-white'
+          }`}
+        >
+          {markingAll ? 'Marcando...' : 'Marcar todas'}
+        </button>
       </div>
 
-      {errorMsg && <p className="text-red-400 text-sm">{errorMsg}</p>}
+      {unreadCount > 0 && (
+        <p className="text-accent-orange text-sm font-medium -mt-3">
+          Tenés {unreadCount} sin leer
+        </p>
+      )}
+
+      {actionError && <p className="text-red-400 text-sm">{actionError}</p>}
 
       {notifications.length === 0 ? (
-        <p className="text-white/40 text-sm text-center py-6">Todavía no tenés notificaciones</p>
+        <p className="text-white/40 text-sm text-center py-10">No tenés notificaciones 🔔</p>
       ) : (
         <div className="flex flex-col gap-2">
-          {notifications.map((n) => {
-            const itemClasses = `card-glass px-4 py-3 flex items-start gap-3 border-l-4 transition-colors ${
-              n.isRead
-                ? 'border-l-transparent opacity-60'
-                : 'border-l-accent-orange bg-accent-orange/5'
-            }`
-
-            const content = (
-              <>
-                {!n.isRead && (
-                  <span className="w-2 h-2 mt-1.5 rounded-full bg-accent-orange shrink-0" />
-                )}
-                <div className="flex flex-col gap-1 flex-1">
-                  <p className={`text-sm ${n.isRead ? 'text-white/60' : 'text-white'}`}>{n.message}</p>
-                  <p className="text-white/40 text-xs">
-                    {new Date(n.createdAt).toLocaleDateString('es-AR')}
-                  </p>
+          {notifications.map((n) => (
+            <div
+              key={n.id}
+              className={`card-glass px-4 py-3 flex items-start justify-between gap-3 ${
+                n.isRead ? 'bg-white/5' : 'bg-white/10'
+              }`}
+            >
+              <div className="flex flex-col gap-1 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-white text-sm">{n.message}</p>
+                  {!n.isRead && (
+                    <span className="bg-accent-orange text-white text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
+                      Nueva
+                    </span>
+                  )}
                 </div>
-              </>
-            )
+                <p className="text-white/40 text-xs">{n.type}</p>
+                <p className="text-white/40 text-xs">
+                  {new Date(n.createdAt).toLocaleDateString('es-AR')}
+                </p>
+              </div>
 
-            if (n.referenceType === 'GROUP' && n.referenceId) {
-              return (
-                <Link
-                  key={n.id}
-                  href={`/groups/${n.referenceId}`}
-                  onClick={() => {
-                    if (!n.isRead) markAsRead(n.id)
-                  }}
-                  className={itemClasses}
+              {n.isRead ? (
+                <span className="text-white/30 text-sm shrink-0">✓</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleMarkAsRead(n.id)}
+                  disabled={markingId === n.id}
+                  className="bg-white/10 text-white/80 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-white/20 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                 >
-                  {content}
-                </Link>
-              )
-            }
-
-            return (
-              <button
-                key={n.id}
-                type="button"
-                onClick={() => handleItemClick(n)}
-                className={`${itemClasses} text-left w-full`}
-              >
-                {content}
-              </button>
-            )
-          })}
+                  {markingId === n.id ? 'Marcando...' : 'Marcar leída'}
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
