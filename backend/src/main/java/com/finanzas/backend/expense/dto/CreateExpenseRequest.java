@@ -20,7 +20,7 @@ public class CreateExpenseRequest {
     private String notes;
     private String receiptUrl;
 
-    // Quien pagó el gasto. Si no se manda, se usa el usuario autenticado (X-User-Id)
+    // Quien pagó el gasto. Si no se manda, se usa el usuario autenticado (JWT)
     private Long paidById;
 
     // IDs de los participantes del gasto

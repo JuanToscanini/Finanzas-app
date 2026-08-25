@@ -1,5 +1,8 @@
 package com.finanzas.backend.split;
 
+import com.finanzas.backend.auth.CurrentUser;
+import com.finanzas.backend.auth.UserPrincipal;
+import com.finanzas.backend.common.exception.UnauthorizedException;
 import com.finanzas.backend.split.dto.CategoryExpenseResponse;
 import com.finanzas.backend.split.dto.CreateSplitRequest;
 import com.finanzas.backend.split.dto.MonthlyExpenseResponse;
@@ -43,33 +46,60 @@ public class SplitController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<SplitResponse>> getByUser(@PathVariable Long userId) {
+    public ResponseEntity<List<SplitResponse>> getByUser(
+            @PathVariable Long userId,
+            @CurrentUser UserPrincipal currentUser) {
+        if (!userId.equals(currentUser.getId())) {
+            throw new UnauthorizedException("No podés ver los splits de otro usuario");
+        }
         List<SplitResponse> splits = splitService.getByUser(userId)
                 .stream().map(SplitResponse::from).toList();
         return ResponseEntity.ok(splits);
     }
 
     @GetMapping("/user/{userId}/unsettled")
-    public ResponseEntity<List<SplitResponse>> getUnsettledByUser(@PathVariable Long userId) {
+    public ResponseEntity<List<SplitResponse>> getUnsettledByUser(
+            @PathVariable Long userId,
+            @CurrentUser UserPrincipal currentUser) {
+        if (!userId.equals(currentUser.getId())) {
+            throw new UnauthorizedException("No podés ver los splits de otro usuario");
+        }
         List<SplitResponse> splits = splitService.getUnsettledByUser(userId)
                 .stream().map(SplitResponse::from).toList();
         return ResponseEntity.ok(splits);
     }
 
     @PutMapping("/{id}/settled")
-    public ResponseEntity<SplitResponse> markAsSettled(@PathVariable Long id) {
+    public ResponseEntity<SplitResponse> markAsSettled(
+            @PathVariable Long id,
+            @CurrentUser UserPrincipal currentUser) {
+        Split split = splitService.getById(id);
+        boolean isDebtor = split.getUser().getId().equals(currentUser.getId());
+        boolean isPayer = split.getExpense().getPaidBy().getId().equals(currentUser.getId());
+        if (!isDebtor && !isPayer) {
+            throw new UnauthorizedException("No podés modificar este split");
+        }
         return ResponseEntity.ok(SplitResponse.from(splitService.markAsSettled(id)));
     }
 
     @GetMapping("/user/{userId}/stats/by-category")
-    public ResponseEntity<List<CategoryExpenseResponse>> getStatsByCategory(@PathVariable Long userId) {
+    public ResponseEntity<List<CategoryExpenseResponse>> getStatsByCategory(
+            @PathVariable Long userId,
+            @CurrentUser UserPrincipal currentUser) {
+        if (!userId.equals(currentUser.getId())) {
+            throw new UnauthorizedException("No podés ver las estadísticas de otro usuario");
+        }
         return ResponseEntity.ok(splitService.getExpensesByCategory(userId));
     }
 
     @GetMapping("/user/{userId}/stats/by-month")
     public ResponseEntity<List<MonthlyExpenseResponse>> getStatsByMonth(
             @PathVariable Long userId,
-            @RequestParam(defaultValue = "6") int months) {
+            @RequestParam(defaultValue = "6") int months,
+            @CurrentUser UserPrincipal currentUser) {
+        if (!userId.equals(currentUser.getId())) {
+            throw new UnauthorizedException("No podés ver las estadísticas de otro usuario");
+        }
         return ResponseEntity.ok(splitService.getMonthlyExpenses(userId, months));
     }
 }
