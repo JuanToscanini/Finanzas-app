@@ -358,7 +358,12 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* Historial de pagos */}
       <div>
-        <p className="text-white/40 text-xs uppercase tracking-widest mb-3">Historial de pagos</p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-white/40 text-xs uppercase tracking-widest">Historial de pagos</p>
+          <Link href="/settlements" className="text-accent-blue hover:underline text-xs">
+            Ver todos mis pagos
+          </Link>
+        </div>
         {actionError && <p className="text-red-400 text-sm mb-2">{actionError}</p>}
         {settlements.length === 0 ? (
           <p className="text-white/40 text-sm text-center py-6">Todavía no hay pagos registrados en este grupo</p>
