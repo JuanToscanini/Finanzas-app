@@ -251,8 +251,10 @@ export default function NewExpensePage() {
           <button
             type="submit"
             disabled={submitting}
-            className={`w-full bg-accent-orange text-white text-sm font-semibold rounded-xl px-4 py-3 text-center transition-colors ${
-              submitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent-orange-light cursor-pointer'
+            className={`w-full bg-accent-orange text-white text-sm font-semibold rounded-xl px-4 py-3 text-center transition-all duration-150 ${
+              submitting
+                ? 'opacity-50 cursor-not-allowed'
+                : 'hover:bg-accent-orange-light hover:shadow-lg hover:shadow-accent-orange/20 active:scale-95 cursor-pointer'
             }`}
           >
             {submitting ? 'Registrando...' : 'Registrar gasto'}
