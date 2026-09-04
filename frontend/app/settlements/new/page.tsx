@@ -75,7 +75,7 @@ export default function NewSettlementPage() {
   const friendIds = new Set(friends.map((f) => f.id))
   const recipients = selectedGroup
     ? selectedGroup.members.filter((m) => m.id !== currentUserId && friendIds.has(m.id))
-    : []
+    : friends
 
   const handleGroupChange = (value: string) => {
     setGroupId(value ? Number(value) : '')
@@ -84,10 +84,6 @@ export default function NewSettlementPage() {
   }
 
   const handleSubmit = async () => {
-    if (!groupId) {
-      setErrorMsg('Elegí un grupo')
-      return
-    }
     if (!paidToId) {
       setErrorMsg('Elegí a quién le pagás')
       return
@@ -102,7 +98,7 @@ export default function NewSettlementPage() {
 
     try {
       await api.post('/api/settlements', {
-        groupId,
+        groupId: groupId || null,
         paidToId,
         amount: Number(amount),
         currency,
@@ -137,17 +133,25 @@ export default function NewSettlementPage() {
 
       <h1 className="text-xl font-semibold text-white">Registrar un pago</h1>
 
-      {groups.length === 0 ? (
+      {groups.length === 0 && friends.length === 0 ? (
         <div className="card-glass p-6 flex flex-col items-center gap-3 text-center">
           <p className="text-white/50 text-sm">
-            Necesitás pertenecer a un grupo para registrar un pago.
+            Necesitás tener al menos un amigo o pertenecer a un grupo para registrar un pago.
           </p>
-          <Link
-            href="/groups/new"
-            className="bg-accent-orange text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-accent-orange-light transition-colors"
-          >
-            Crear un grupo
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href="/friends"
+              className="bg-accent-orange text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-accent-orange-light transition-colors"
+            >
+              Agregar un amigo
+            </Link>
+            <Link
+              href="/groups/new"
+              className="bg-white/10 text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-white/20 transition-colors"
+            >
+              Crear un grupo
+            </Link>
+          </div>
         </div>
       ) : (
         <form
@@ -167,7 +171,7 @@ export default function NewSettlementPage() {
               onChange={(e) => handleGroupChange(e.target.value)}
               className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accent-orange transition-colors"
             >
-              <option value="" className="bg-[#1E3A5F]">Elegí un grupo</option>
+              <option value="" className="bg-[#1E3A5F]">Pago suelto (sin grupo)</option>
               {groups.map((g) => (
                 <option key={g.id} value={g.id} className="bg-[#1E3A5F]">{g.name}</option>
               ))}
@@ -182,19 +186,21 @@ export default function NewSettlementPage() {
               id="paid-to"
               value={paidToId}
               onChange={(e) => setPaidToId(e.target.value ? Number(e.target.value) : '')}
-              disabled={!selectedGroup}
+              disabled={recipients.length === 0}
               className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-accent-orange transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="" className="bg-[#1E3A5F]">
-                {selectedGroup ? 'Elegí un amigo' : 'Elegí primero un grupo'}
+                {recipients.length > 0 ? 'Elegí un amigo' : 'No hay amigos disponibles'}
               </option>
               {recipients.map((m) => (
                 <option key={m.id} value={m.id} className="bg-[#1E3A5F]">{m.username}</option>
               ))}
             </select>
-            {selectedGroup && recipients.length === 0 && (
+            {recipients.length === 0 && (
               <p className="text-white/40 text-xs">
-                No tenés amigos en común con los miembros de este grupo.
+                {selectedGroup
+                  ? 'No tenés amigos en común con los miembros de este grupo.'
+                  : 'No tenés amigos agregados todavía.'}
               </p>
             )}
           </div>

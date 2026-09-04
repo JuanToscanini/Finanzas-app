@@ -16,7 +16,7 @@ type SettlementStatus = 'PENDING' | 'CONFIRMED' | 'REJECTED'
 
 interface SettlementResponse {
   id: number
-  groupId: number
+  groupId: number | null
   paidBy: UserResponse
   paidTo: UserResponse
   amount: number

@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @Data
 public class CreateSettlementRequest {
 
-    @NotNull(message = "Group id is required")
+    // Null significa "pago suelto sin grupo" entre dos amigos.
     private Long groupId;
 
     @NotNull(message = "Paid to id is required")

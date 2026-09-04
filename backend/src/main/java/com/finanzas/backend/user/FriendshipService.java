@@ -69,6 +69,13 @@ public class FriendshipService {
         return friendshipRepository.save(friendship);
     }
 
+    public boolean areFriends(Long userId1, Long userId2) {
+        User user1 = userService.getById(userId1);
+        User user2 = userService.getById(userId2);
+        return friendshipRepository.existsByRequesterAndAddresseeAndStatus(user1, user2, Friendship.Status.ACCEPTED)
+                || friendshipRepository.existsByRequesterAndAddresseeAndStatus(user2, user1, Friendship.Status.ACCEPTED);
+    }
+
     public List<Friendship> getFriends(Long userId) {
         User user = userService.getById(userId);
         return friendshipRepository.findByUserAndStatus(user, Friendship.Status.ACCEPTED);

@@ -20,8 +20,9 @@ public class Settlement {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Null significa "pago suelto sin grupo" entre dos amigos.
     @ManyToOne
-    @JoinColumn(name = "group_id")
+    @JoinColumn(name = "group_id", nullable = true)
     private Group group;
 
     @ManyToOne(optional = false)

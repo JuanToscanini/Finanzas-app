@@ -6,6 +6,7 @@ import com.finanzas.backend.common.exception.ValidationException;
 import com.finanzas.backend.group.Group;
 import com.finanzas.backend.group.GroupService;
 import com.finanzas.backend.notification.NotificationService;
+import com.finanzas.backend.user.FriendshipService;
 import com.finanzas.backend.user.User;
 import com.finanzas.backend.user.UserService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class SettlementService {
     private final GroupService groupService;
     private final UserService userService;
     private final NotificationService notificationService;
+    private final FriendshipService friendshipService;
 
     @Transactional
     public Settlement createSettlement(Long groupId, Long paidById, Long paidToId,
@@ -35,12 +37,17 @@ public class SettlementService {
             throw new ValidationException("El monto debe ser mayor a cero");
         }
 
-        Group group = groupService.getById(groupId);
-        validateGroupMember(group, paidById);
-
         User paidBy = userService.getById(paidById);
         User paidTo = userService.getById(paidToId);
-        validateGroupMember(group, paidToId);
+
+        Group group = null;
+        if (groupId != null) {
+            group = groupService.getById(groupId);
+            validateGroupMember(group, paidById);
+            validateGroupMember(group, paidToId);
+        } else if (!friendshipService.areFriends(paidById, paidToId)) {
+            throw new UnauthorizedException("Solo podés registrar un pago suelto con un amigo");
+        }
 
         Settlement settlement = new Settlement();
         settlement.setGroup(group);
