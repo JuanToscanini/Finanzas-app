@@ -37,7 +37,6 @@ export default function NewExpensePage() {
   const [currency, setCurrency] = useState('UYU')
   const [splitType, setSplitType] = useState<SplitType>('EQUAL')
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [groupId, setGroupId] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [participantIds, setParticipantIds] = useState<number[]>([])
   const [notes, setNotes] = useState('')
